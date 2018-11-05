@@ -10,17 +10,17 @@ EPOCHS = 200
 train_dataset, test_dataset = load_database()
 
 
-# RESNET-9 GENERATOR W/O NOISE
-resnet_gan = C_GAN(generator='resnet')
-resnet_gan.train(train_dataset, EPOCHS)
+# UNET GENERATOR W/ NOISE
+unet_gan = C_GAN(generator='unet', noise=True)
+unet_gan.train(train_dataset, EPOCHS)
 
 idx = 0
 for tar, img in test_dataset.take(10):
     idx += 1
-    resnet_gan.generate_image(img, tar, name='resnet_img' + str(idx))
+    unet_gan.generate_image(img, tar, name='unet_noise_img' + str(idx))
 
-mse = resnet_gan.evaluate(test_dataset)
-with open('mse_resnet.pickle', 'wb') as f:
+mse = unet_gan.evaluate(test_dataset)
+with open('mse_unet_noise.pickle', 'wb') as f:
     pickle.dump(mse, f)
 
 print("Mean Squared Error:", mse)
