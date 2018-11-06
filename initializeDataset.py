@@ -55,7 +55,7 @@ def load_image(image_file, is_train):
     return input_image, real_image
 
 
-def load_database():
+def load_dataset():
     tf.set_random_seed(1234)
     np.random.seed(4321)
 
