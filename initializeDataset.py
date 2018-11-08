@@ -69,10 +69,10 @@ def load_dataset():
     train_dataset = tf.data.Dataset.list_files(PATH+'train/*.jpg')
     train_dataset = train_dataset.shuffle(BUFFER_SIZE)
     train_dataset = train_dataset.map(lambda x: load_image(x, True))
-    train_dataset = train_dataset.batch(1)
+    train_dataset = train_dataset.batch(BATCH_SIZE)
 
     test_dataset = tf.data.Dataset.list_files(PATH+'val/*.jpg')
     test_dataset = test_dataset.map(lambda x: load_image(x, False))
-    test_dataset = test_dataset.batch(1)
+    test_dataset = test_dataset.batch(BATCH_SIZE)
 
     return train_dataset, test_dataset
