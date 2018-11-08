@@ -276,8 +276,8 @@ class Discriminator(tf.keras.Model):
 
 class C_GAN():
     
-    def __init__(self, generator, noise=False, generator_learning_rate=2e-4, discriminator_learning_rate=2e-4):
-        self.name = generator.__class__.__name__ + '_' + str(noise) + '_'
+    def __init__(self, generator, generator_learning_rate=2e-4, discriminator_learning_rate=2e-4):
+        self.name = generator.__class__.__name__ + '_'
         self.generator = generator
         self.discriminator = Discriminator()
         
@@ -293,8 +293,7 @@ class C_GAN():
     
     def generator_loss(self, disc_generated_output, gen_output, target):
         gan_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.ones_like(disc_generated_output),
-                                             logits = disc_generated_output) 
-        # mean absolute error
+                                                   logits = disc_generated_output)
         l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
 
         total_gen_loss = gan_loss + (LAMBDA * l1_loss)
@@ -304,21 +303,16 @@ class C_GAN():
 
     def discriminator_loss(self, disc_real_output, disc_generated_output):
         real_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.ones_like(disc_real_output), 
-                                              logits = disc_real_output)
+                                                    logits = disc_real_output)
         generated_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.zeros_like(disc_generated_output), 
-                                                   logits = disc_generated_output)
+                                                         logits = disc_generated_output)
 
         total_disc_loss = real_loss + generated_loss
 
         return total_disc_loss
     
     
-    def generate_image(self, input_image, target, name):
-        # the training=True is intentional here since
-        # we want the batch statistics while running the model
-        # on the test dataset. If we use training=False, we will get 
-        # the accumulated statistics learned from the training dataset
-        # (which we don't want)
+    def generate_image(self, input_image, target, name=None):
         gen_output = self.generator(input_image, training=True)
         plt.figure(figsize=(15,15))
 
@@ -333,12 +327,14 @@ class C_GAN():
             plt.axis('off')
 
         plt.show()
-        plt.savefig(os.path.join(output_dir, name + '.png'))
+        if name is not None:
+            plt.savefig(os.path.join(output_dir, self.name + name + '.png'))
         
     
-    def restore_from_checkpoint(self):
-        # restoring the latest checkpoint in checkpoint_dir
-        self.checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+    def restore_from_checkpoint(self, checkpoint_file=None):
+        if checkpoint_file is None:
+            checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
+        self.checkpoint.restore(checkpoint_file)
     
     
     def train(self, dataset, epochs):
@@ -398,3 +394,29 @@ class C_GAN():
         
         avg_mse /= it
         return avg_mse
+    
+
+    def detailed_losses(self, dataset):
+        loss = []
+
+        for target, input_image in dataset:
+            gen_output = self.generator(input_image, training=True)        
+            disc_real_output = self.discriminator(input_image, target, training=True)
+            disc_generated_output = self.discriminator(input_image, gen_output, training=True)
+
+            gen_gan_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.ones_like(disc_generated_output),
+                                                           logits = disc_generated_output)
+            gen_l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
+            total_gen_loss = gen_gan_loss + LAMBDA * gen_l1_loss
+
+            disc_real_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.ones_like(disc_real_output), 
+                                                             logits = disc_real_output)
+            disc_generated_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels = tf.zeros_like(disc_generated_output), 
+                                                                  logits = disc_generated_output)
+            total_disc_loss = disc_real_loss + disc_generated_loss
+
+            loss.append((gen_gan_loss, gen_l1_loss, total_gen_loss, disc_real_loss, disc_generated_loss, total_disc_loss))
+        
+        loss = np.array(loss)
+        avg_loss = np.mean(loss, axis=0)
+        return loss, avg_loss
