@@ -420,3 +420,18 @@ class C_GAN():
         loss = np.array(loss)
         avg_loss = np.mean(loss, axis=0)
         return loss, avg_loss
+
+    
+    def predict(self, input_image):
+        # Input 3 x H x W (values b/w 0 and 255)
+        # Rescale and normalize input
+        input_image = tf.cast(input_image, tf.float32)
+        input_image = tf.image.resize_images(input_image, size=[IMG_HEIGHT, IMG_WIDTH],
+                                             align_corners=True,
+                                             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        input_image = (input_image / 127.5) - 1
+        input_image = tf.expand_dims(input_image, 0)
+        
+        # Generate output image (values b/w -1 and 1)
+        gen_output = self.generator(input_image, training=True)
+        return gen_output[0]
