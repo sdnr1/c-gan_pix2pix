@@ -226,10 +226,10 @@ class ResNet9Generator(tf.keras.Model):
         return x7
 
 
-class Discriminator(tf.keras.Model):
+class PatchDiscriminator(tf.keras.Model):
     
     def __init__(self):
-        super(Discriminator, self).__init__()
+        super(PatchDiscriminator, self).__init__()
         initializer = tf.random_normal_initializer(0., 0.02)
     
         self.down1 = Downsample(64, 4, False)
@@ -276,15 +276,16 @@ class Discriminator(tf.keras.Model):
 
 class C_GAN():
     
-    def __init__(self, generator, generator_learning_rate=2e-4, discriminator_learning_rate=2e-4):
-        self.name = generator.__class__.__name__ + '_'
+    def __init__(self, generator, discriminator, generator_learning_rate=2e-4, discriminator_learning_rate=2e-4, ckpt_freq=20, name=None):
+        self.name = ('' if name is None else name + '_') + generator.__class__.__name__ + '_' + discriminator.__class__.__name__
         self.generator = generator
-        self.discriminator = Discriminator()
+        self.discriminator = discriminator
+        self.ckpt_freq = ckpt_freq
         
         self.generator_optimizer = tf.train.AdamOptimizer(generator_learning_rate, beta1=0.5)
         self.discriminator_optimizer = tf.train.AdamOptimizer(discriminator_learning_rate, beta1=0.5)
         
-        self.checkpoint_prefix = os.path.join(checkpoint_dir, self.name + "ckpt")
+        self.checkpoint_prefix = os.path.join(checkpoint_dir, self.name + '_ckpt')
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
                                               discriminator_optimizer=self.discriminator_optimizer,
                                               generator=self.generator,
@@ -331,9 +332,8 @@ class C_GAN():
             plt.savefig(os.path.join(output_dir, self.name + name + '.png'))
         
     
-    def restore_from_checkpoint(self, checkpoint_file=None):
-        if checkpoint_file is None:
-            checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
+    def restore_from_checkpoint(self):
+        checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
         self.checkpoint.restore(checkpoint_file)
     
     
@@ -374,7 +374,7 @@ class C_GAN():
             avg_disc_loss /= it
             training_stats.append((epoch + 1, time_taken, avg_gen_loss, avg_disc_loss))
             
-            if (epoch + 1) % 20 == 0:
+            if (epoch + 1) % self.ckpt_freq == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
                 with open(self.name + 'training_stats.pickle', 'wb') as f:
                     pickle.dump(training_stats, f)
@@ -394,6 +394,21 @@ class C_GAN():
         
         avg_mse /= it
         return avg_mse
+    
+
+    def summary(self):
+        try:
+            print('GAN:', self.name)
+            print()
+            print('Generator Summary')
+            print('-----------------')
+            self.generator.summary()
+            print()
+            print('Discriminator Summary')
+            print('---------------------')
+            self.discriminator.summary()
+        except:
+            print('Error : Model can not be summarized. Please ensure that model is built.')
     
 
     def detailed_losses(self, dataset):
