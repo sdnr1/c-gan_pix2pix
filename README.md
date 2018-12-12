@@ -28,7 +28,7 @@ See [Project Report](https://github.com/sdnr1/c-gan_pix2pix/blob/master/project_
 1. Import required functions.
 
 ```
-from initializeDataset from load_dataset
+from initializeDataset import load_dataset
 from c_gan import C_GAN, UNetGenerator, ResNet9Generator, PatchDiscriminator
 ```
 
