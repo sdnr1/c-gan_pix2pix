@@ -21,8 +21,6 @@ def load_image(image_file, is_train):
     real_image = tf.cast(real_image, tf.float32)
 
     if is_train:
-        # random jittering
-    
         # resizing to 286 x 286 x 3
         input_image = tf.image.resize_images(input_image, [286, 286], 
                                              align_corners=True,

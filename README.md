@@ -47,9 +47,9 @@ gan = C_GAN(generator=UNetGenerator(noise=True), discriminator=PatchDiscriminato
 # for ResNet-9 generator with noise added to inputs
 gan = C_GAN(generator=UNetGenerator(noise=True), discriminator=PatchDiscriminator())
 
-# Default training rate is 2e-4 for both generator and discriminator.
-# Use 'generator_learning_rate' and 'discriminator_learning_rate' parameters to specify different learning rates.
-# See code for more details.
+# Default training rate is 2e-4 for both generator and discriminator
+# Use 'generator_learning_rate' and 'discriminator_learning_rate' parameters to specify different learning rates
+# Use 'ckpt_freq' to change frequency of saving TF checkpoint, default frequency is 20 epochs
 ```
 
 3. Train model.
@@ -65,13 +65,7 @@ gan.train(train_dataset, EPOCHS)
 mse = gan.evaluate(test_dataset)
 ```
 
-5. Restoring model from checkpoint
-
-```
-gan.restore_from_checkpoint()
-```
-
-6. Generate samples outputs
+5. Generate samples outputs.
 
 ```
 NUM_SAMPLES = 10
@@ -79,10 +73,23 @@ for tar, img in test_dataset.take(NUM_SAMPLES):
     gan.generate_image(img, tar)
 ```
 
-7. Predict map image from a given aerial image
+6. Predict map image from a given aerial image.
 
 ```
 # Input image can be of any size (square images are prefered)
 # Outputs is a 3 x 256 x 256 RGB image of prediction (range of values [-1, 1])
 gan.predict(input_image) 
+```
+
+7. Restoring model from checkpoint.
+
+```
+gan.restore_from_checkpoint()
+```
+
+8. Output model summary
+
+```
+# Make sure model is compiled before this
+gan.summary()
 ```
